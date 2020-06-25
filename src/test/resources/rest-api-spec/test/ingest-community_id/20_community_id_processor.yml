@@ -1,0 +1,32 @@
+---
+"Test communityid processor with defaults":
+  - do:
+      ingest.put_pipeline:
+        id: "my_pipeline"
+        body:  >
+          {
+            "description": "_description",
+            "processors": [
+              {
+                "community_id" : {
+                  "field" : "field1",
+                  "target_field" : "field2"
+                }
+              }
+            ]
+          }
+  - match: { acknowledged: true }
+
+  - do:
+      index:
+        index: test
+        id: 1
+        pipeline: "my_pipeline"
+        body: {field1: "TCP,192.168.1.50,35.193.143.25,36602,443"}
+
+  - do:
+      get:
+        index: test
+        id: 1
+  - match: { _source.field1: "TCP,192.168.1.50,35.193.143.25,36602,443" }
+  - match: { _source.field2: "1:APNHWcH42kctsikbfwfupcC74Nk=" }
