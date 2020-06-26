@@ -1,45 +1,62 @@
 # Elasticsearch community_id Ingest Processor
 
-Explain the use case of this processor in a TLDR fashion.
+This ingest processor calculates community_id from a comma seperated
+string consisting of:
+ - 5 Tuple Network Fields
+   - network.transport, source.ip, destination.ip, source.port, destination.port
+ - 3 Tuple Network Fields
+  - network.transport, source.ip, destination.ip,
+
+Error checking and exception handling is currently marginal, most likely to result in an ignore situaiton.
+
+The calculation is based on the Zeek community id spec
+ - https://github.com/corelight/zeek-community-id
+
+With thanks to Rapid7 for their java implementation which I used for  "I am not really a java programmer" fixes (byte representation of the padding, ports, & protocols, and using enums, specifically)
 
 ## Usage
-
-
-```
-PUT _ingest/pipeline/community_id-pipeline
+ - Community ID Pipeline (5 Tuple)
+   PUT  /_ingest/pipeline/community_id
 {
-  "description": "A pipeline to do whatever",
-  "processors": [
-    {
-      "community_id" : {
-        "field" : "my_field"
+   "description" : "Community_Id Generator",
+    "processors" : [
+      {
+        "set" : {
+          "field" : "temp.communityString",
+          "value" : "{{network.transport}},{{source.ip}},{{destination.ip}},{{source.port}},{{destination.port}}"
+        }
+      },
+      {
+        "community_id" : {
+          "field" : "temp.communityString",
+          "target_field" : "network.community_id"
+        }
+      },
+      {
+        "remove" : {
+          "field" : "temp.communityString"
+        }
       }
-    }
-  ]
-}
-
-PUT /my-index/my-type/1?pipeline=community_id-pipeline
-{
-  "my_field" : "Some content"
-}
-
-GET /my-index/my-type/1
-{
-  "my_field" : "Some content"
-  "potentially_enriched_field": "potentially_enriched_value"
-}
+    ]
+  }
+  - Call to community_id pipeline
+    {
+        "pipeline" : {
+           "if" : "ctx.network?.community_id == null && ctx.source?.ip != null && ctx.source?.port != null && ctx.destination?.ip != null && ctx.destination?.port != null && ctx.network?.transport != null",
+           "name" : "community_id"
+        }
+      }
 ```
 
 ## Configuration
 
-| Parameter | Use |
-| --- | --- |
-| some.setting   | Configure x |
-| other.setting  | Configure y |
+Currently only target field, all other options are set for defaults (0 byte pad, 0 seed, "1:" version prefix, and base64 encoding)
+
+target field defaults to network.community_id, but will accept another field if provided
 
 ## Setup
 
-In order to install this plugin, you need to create a zip distribution first by running
+The repo has latest distribution in the plugin directory, the compatibility has been set for 7.8 (have not figured out how to compile for e.g. 7.*)
 
 ```bash
 gradle clean check
@@ -55,6 +72,7 @@ bin/elasticsearch-plugin install file:///path/to/ingest-community_id/build/distr
 
 ## Bugs & TODO
 
-* There are always bugs
-* and todos...
+* Change input to multiple fields if possible (no temp string)
+* Implement config options
+* Finalize easy input for 3 or 5 tuple
 

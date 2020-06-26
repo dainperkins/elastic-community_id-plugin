@@ -1,0 +1,26 @@
+## Need a better naming convention for generic/shared pipelines
+## Drop this in dev tools, or use your favorite REST tool, or 
+PUT _ingest/pipeline/community_id
+  {
+    "description" : "Community_Id Generator ",
+    "version" : 1,
+    "processors" : [
+      {
+        "set" : {
+          "field" : "temp.communityString",
+          "value" : "{{network.transport}},{{source.ip}},{{destination.ip}},{{source.port}},{{destination.port}}"
+        }
+      },
+      {
+        "community_id" : {
+          "field" : "temp.communityString",
+          "target_field" : "network.community_id"
+        }
+      },
+      {
+        "remove" : {
+          "field" : "temp.communityString"
+        }
+      }
+    ]
+  }
