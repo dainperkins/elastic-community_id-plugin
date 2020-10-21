@@ -74,6 +74,7 @@ bin/elasticsearch-plugin install file:///path/to/ingest-community_id/build/distr
 ## Bugs & TODO
 
 * Change input to multiple fields if possible (no temp string)
+      - or just pull the 5 tuple/3 tuple fields based on 1 input (e.g. tuple = 3||5
 * Implement config options
-* Finalize easy input for 3 or 5 tuple
+
 
